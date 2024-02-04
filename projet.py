@@ -1,15 +1,17 @@
 from itertools import permutations
 
+''' EXERCICE 1'''
 def generate_dimacs_championship_schedule(ne, ns):
     n_teams = ne #nombre d'equipes
     n_days = 2 * ns #nombre de jours
 
     # generer les equipes
-    equipes = [i for i in range(1,n_teams+1)]
+    equipes = [i for i in range(1,n_teams+1)] #je pars pas de zero mais de 1 ici
     print(f'liste de toutes les equipes: {equipes}')
 
     #toutes les permutations des equipes
     toutes_combinaisons = list(permutations(equipes, 2))
+    print(f'toutes les combinaisons d\'equipes {toutes_combinaisons}')
 
     #creation du dico qui va contenir tous les matchs par jour
     all_matchs = {}
@@ -38,6 +40,8 @@ def generate_dimacs_championship_schedule(ne, ns):
             sequence.extend([current_element, next_element]) #on ajoute ici
             return find_no_common_elements_sequence([elem for elem in rest_elements if elem != next_element], sequence)
         else:
+            no_match = 'empty'
+            sequence.extend([current_element, no_match])
             #si on ne peut pas trouver d'element suivant, revenir en arriere
             return find_no_common_elements_sequence(rest_elements, sequence)
     res = find_no_common_elements_sequence(toutes_combinaisons)
@@ -68,11 +72,15 @@ def dimacs_format(journees):
 
     for _, matches in journees.items():
         for match in matches:
-            equipe1, equipe2 = match
-            # Assigner des identifiants aux équipes
-            id1, id2 = get_equipe_id(equipe1), get_equipe_id(equipe2)
-            # Ajouter une clause pour chaque match
-            dimacs_clauses.append((id1, id2))
+            if match != 'empty':
+                equipe1, equipe2 = match
+                # Assigner des identifiants aux équipes
+                id1, id2 = get_equipe_id(equipe1), get_equipe_id(equipe2)
+                # Ajouter une clause pour chaque match
+                dimacs_clauses.append((id1, id2))
+            '''
+            pour le moment si un des deux match ne se produit pas je skip mais faut peut etre changer plus tard
+            '''
 
     # Construire la chaîne DIMACS
     dimacs_string = f"p cnf {len(equipe_ids)} {len(dimacs_clauses)}\n"
@@ -82,10 +90,64 @@ def dimacs_format(journees):
     return dimacs_string[:-1] #je retire juste la derniere ligne a cause du \n
     
 
-#exemple, j'ai verifie a la main et j'ai les meme resultats
-dimacs_championship_schedule = generate_dimacs_championship_schedule(4, 3)
+''' si le nombre de semaines donne est trop petit alors on pourra pas avoir tous les matchs. Il y en aura le max pr le nombre de semaines mais pas tous '''
+dimacs_championship_schedule = generate_dimacs_championship_schedule(4,3)
 dimacs_version = dimacs_format(dimacs_championship_schedule)
 
 #save results
 with open("championat.dimacs", "w") as file:
     file.write(dimacs_version)
+
+''' EXERCICE 2'''
+'''
+Question 1. La formule du nombre total de variables propositionnelles est le produit du nombre total de jours nj et du nombre total d'équipes ne.
+Cela garantit que chaque combinaison de chaque équipe et chaque match de la journée est représenté.
+nombre de variables = nj x ne**2
+'''
+
+''' Question 2.'''
+def codage(ne, nj , j, x, y):
+    return j * ne**2 + x * ne + y + 1
+
+#changer les valeurs ici
+ne = 4 
+j = 1   
+x = 2   
+y = 0   
+encoded = codage(ne, None, j, x, y)
+
+''' Question 3.'''
+def decodage(k, ne):
+    k -= 1
+    j = k // (ne**2)
+    remainder = k % (ne**2)
+    x = remainder // ne
+    y = remainder % ne
+    return j, x, y
+decoded = decodage(encoded, ne)
+
+print(f'Test codage/decodage: {decodage(codage(ne,None,j,x,y), ne) == (j,x,y)}') #test
+
+''' EXERCICE 3'''
+''' Question 1.'''
+def au_moins_un_vrai(variables):
+    return " ".join(map(str, variables)) + " 0"
+
+def au_plus_un_vrai(variables):
+    clauses = []
+    for i in range(len(variables)):
+        current = variables[i]
+        rest = variables[:i] + variables[i+1:]
+        rest = [elem * -1 for elem in rest]
+        rest.append(current)
+        #print(rest)
+        clauses.append(sorted(rest, key=lambda x: abs(x)))
+    res = ''
+    for l in clauses:
+        for elem in l:
+            res += str(elem) + ' '
+        res += '0\n'
+    return res[:-1]
+
+print(f'Test question 1.1: {au_moins_un_vrai([1,2,3,4])}')
+print(f'Test question 1.2: {au_plus_un_vrai([1,2,3,4])}')
