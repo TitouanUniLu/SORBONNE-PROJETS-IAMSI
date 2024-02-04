@@ -142,12 +142,10 @@ def au_plus_un_vrai(variables):
         rest.append(current)
         #print(rest)
         clauses.append(sorted(rest, key=lambda x: abs(x)))
-    res = ''
-    for l in clauses:
-        for elem in l:
-            res += str(elem) + ' '
-        res += '0\n'
-    return res[:-1]
+    dimacs = "\n".join(" ".join(map(str, clause + [0])) for clause in clauses)
+    return dimacs
 
-print(f'Test question 1.1: {au_moins_un_vrai([1,2,3,4])}')
-print(f'Test question 1.2: {au_plus_un_vrai([1,2,3,4])}')
+print(f'Test question 1.1:\n {au_moins_un_vrai([1,2,3,4])}')
+print(f'Test question 1.2:\n {au_plus_un_vrai([1,2,3,4])}')
+
+''' Question 2.'''
