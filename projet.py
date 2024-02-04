@@ -149,3 +149,22 @@ print(f'Test question 1.1:\n {au_moins_un_vrai([1,2,3,4])}')
 print(f'Test question 1.2:\n {au_plus_un_vrai([1,2,3,4])}')
 
 ''' Question 2.'''
+#1. C1i,j <=> (k=1 -> ne) ∑ m_j_i_k <= 1 donc la somme des matchs pour une equipe pendant un jour doit etre inferieur ou egal a 1 pour True sinon Faux
+
+#2.
+def encoderC1(ne, nj):
+    constraints = []
+
+    for i in range(1, ne + 1):
+        for j in range(1, nj + 1):
+            # Générer la contrainte C1 pour l'équipe i et le jour j
+            constraint = [f"m_{j}_{i}_{k}" for k in range(1, ne + 1)]
+            constraints.append(" ".join(constraint) + " <= 1")
+    return constraints
+
+#3.
+constraints_C1 = encoderC1(ne=3, nj=4)
+print(constraints_C1)
+# il y a 12 contraintes et 36 clauses (3 pour chaque contrainte)
+
+#4.
