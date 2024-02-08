@@ -106,7 +106,7 @@ nombre de variables = nj x ne**2
 '''
 
 ''' Question 2.'''
-def codage(ne, nj , j, x, y):
+def codage(ne, j, x, y):
     return j * ne**2 + x * ne + y + 1
 
 #changer les valeurs ici
@@ -114,7 +114,7 @@ ne = 4
 j = 1   
 x = 2   
 y = 0   
-encoded = codage(ne, None, j, x, y)
+encoded = codage(ne, j, x, y)
 
 ''' Question 3.'''
 def decodage(k, ne):
@@ -126,7 +126,7 @@ def decodage(k, ne):
     return j, x, y
 decoded = decodage(encoded, ne)
 
-print(f'Test codage/decodage: {decodage(codage(ne,None,j,x,y), ne) == (j,x,y)}') #test
+print(f'Test codage/decodage: {decodage(codage(ne,j,x,y), ne) == (j,x,y)}') #test
 
 ''' EXERCICE 3'''
 ''' Question 1.'''
@@ -144,27 +144,80 @@ def au_plus_un_vrai(variables):
         clauses.append(sorted(rest, key=lambda x: abs(x)))
     dimacs = "\n".join(" ".join(map(str, clause + [0])) for clause in clauses)
     return dimacs
+    # counter = 0
+    # for i in range(len(variables)):
+    #     for j in range(len(variables)):
+    #         if j == counter:
+    #             clauses += ' ' + str(variables[j])
+    #         else:
+    #             clauses += ' -' + str(variables[j])
+    #     clauses += ' 0\n'
+    #     counter += 1
+    # return clauses[:-1]
 
 print(f'Test question 1.1:\n {au_moins_un_vrai([1,2,3,4])}')
 print(f'Test question 1.2:\n {au_plus_un_vrai([1,2,3,4])}')
+
+def dimacs_f(l):
+    s = ''
+    for elem in l:
+        s += str(elem) + ' '
+    s += '0'
+    return s
 
 ''' Question 2.'''
 #1. C1i,j <=> (k=1 -> ne) ∑ m_j_i_k <= 1 donc la somme des matchs pour une equipe pendant un jour doit etre inferieur ou egal a 1 pour True sinon Faux
 
 #2.
 def encoderC1(ne, nj):
-    constraints = []
+    contraintes_C1 = []
 
-    for i in range(1, ne + 1):
-        for j in range(1, nj + 1):
-            # Générer la contrainte C1 pour l'équipe i et le jour j
-            constraint = [f"m_{j}_{i}_{k}" for k in range(1, ne + 1)]
-            constraints.append(" ".join(constraint) + " <= 1")
-    return constraints
+    # Pour chaque équipe et chaque jour
+    for equipe in range(1, ne+1):
+        for jour in range(1, nj+1):
+            # Générer une clause pour exprimer que la somme des matchs joués par cette équipe ce jour-là doit être inférieure ou égale à 1
+            clause = [codage(jour, equipe, adversaire, ne) for adversaire in range(1, ne+1) if adversaire != equipe]
+            contraintes_C1.append(clause) #dimacs_f(clause)
+    return contraintes_C1
+
 
 #3.
-constraints_C1 = encoderC1(ne=3, nj=4)
-print(constraints_C1)
-# il y a 12 contraintes et 36 clauses (3 pour chaque contrainte)
+print("C1")
+contraintes_C1 = encoderC1(ne=3, nj=4)
+print(contraintes_C1)
+print('Test format dimacs:')
+for c in contraintes_C1:
+    print(dimacs_f(c))
+# il y a 12 contraintes et 24 clauses
+# m_1_1_2 m_1_1_3 <= 1
+# -> au jour 1, l'equipe 1 peut jouer contre l'equipe 2 ou 3 au plus une fois
 
 #4.
+def encoderC2(ne, nj):
+    contraintes_h = []
+    contraintes_a = []
+    # Générer les paires d'équipes
+    equipes = list(permutations(range(1, ne + 1), 2))
+    
+    # Contraintes pour chaque jour
+    for jour in range(1, nj + 1):
+        # Contraintes "au moins 1" pour les matchs à domicile et à l'extérieur
+        at_most_one_home = [codage(jour, i, j, ne) for i, j in equipes]
+        at_most_one_away = [codage(jour, j, i, ne) for i, j in equipes]
+
+        contraintes_h.append(at_most_one_home)
+        contraintes_a.append(at_most_one_away)
+        # print('home ', at_most_one_home)
+        # print('away ', at_most_one_away)
+    
+    print(f'full home: {contraintes_h}\n')
+    print(f'full away: {contraintes_a}\n')
+    full_contraintes = contraintes_a + contraintes_h
+    # dimacs_format = []
+    # for c in full_contraintes:
+    #     dimacs_format.append(au_plus_un_vrai(c))
+    # print(dimacs_format)
+    return full_contraintes
+
+print("C2")
+print(encoderC2(3,4))
