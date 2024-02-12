@@ -95,8 +95,8 @@ dimacs_championship_schedule = generate_dimacs_championship_schedule(4,3)
 dimacs_version = dimacs_format(dimacs_championship_schedule)
 
 #save results
-with open("championat.dimacs", "w") as file:
-    file.write(dimacs_version)
+# with open("championat.dimacs", "w") as file:
+#     file.write(dimacs_version)
 
 ''' EXERCICE 2'''
 '''
@@ -131,32 +131,20 @@ print(f'Test codage/decodage: {decodage(codage(ne,j,x,y), ne) == (j,x,y)}') #tes
 ''' EXERCICE 3'''
 ''' Question 1.'''
 def au_moins_un_vrai(variables):
-    return " ".join(map(str, variables)) + " 0"
+    clause = [str(v) for v in variables] + ["0"]
+    return [" ".join(clause)]
 
 def au_plus_un_vrai(variables):
     clauses = []
-    for i in range(len(variables)):
-        current = variables[i]
-        rest = variables[:i] + variables[i+1:]
-        rest = [elem * -1 for elem in rest]
-        rest.append(current)
-        #print(rest)
-        clauses.append(sorted(rest, key=lambda x: abs(x)))
-    dimacs = "\n".join(" ".join(map(str, clause + [0])) for clause in clauses)
-    return dimacs
-    # counter = 0
-    # for i in range(len(variables)):
-    #     for j in range(len(variables)):
-    #         if j == counter:
-    #             clauses += ' ' + str(variables[j])
-    #         else:
-    #             clauses += ' -' + str(variables[j])
-    #     clauses += ' 0\n'
-    #     counter += 1
-    # return clauses[:-1]
+    n = len(variables)
+    for i in range(n):
+        for j in range(i + 1, n):
+            clauses.append(f"{-variables[i]} {-variables[j]} 0")
+    return clauses
+   
 
-print(f'Test question 1.1:\n {au_moins_un_vrai([1,2,3,4])}')
-print(f'Test question 1.2:\n {au_plus_un_vrai([1,2,3,4])}')
+# print(f'Test question 1.1:\n {au_moins_un_vrai([1,2,3,4])}')
+# print(f'Test question 1.2:\n {au_plus_un_vrai([1,2,3,4])}')
 
 def dimacs_f(l):
     s = ''
@@ -166,58 +154,31 @@ def dimacs_f(l):
     return s
 
 ''' Question 2.'''
-#1. C1i,j <=> (k=1 -> ne) ∑ m_j_i_k <= 1 donc la somme des matchs pour une equipe pendant un jour doit etre inferieur ou egal a 1 pour True sinon Faux
-
-#2.
 def encoderC1(ne, nj):
     contraintes_C1 = []
-
     # Pour chaque équipe et chaque jour
     for equipe in range(1, ne+1):
         for jour in range(1, nj+1):
-            # Générer une clause pour exprimer que la somme des matchs joués par cette équipe ce jour-là doit être inférieure ou égale à 1
-            clause = [codage(jour, equipe, adversaire, ne) for adversaire in range(1, ne+1) if adversaire != equipe]
-            contraintes_C1.append(clause) #dimacs_f(clause)
+            home = [codage(jour, equipe, ne, adversaire) for adversaire in range(1, ne+1) if adversaire != equipe]
+            ext = [codage(jour, equipe, adversaire, ne) for adversaire in range(1, ne+1) if adversaire != equipe]
+
+            contraintes_C1.extend(au_plus_un_vrai(home + ext)) #dimacs_f(clause)
     return contraintes_C1
 
-
-#3.
 print("C1")
 contraintes_C1 = encoderC1(ne=3, nj=4)
-print(contraintes_C1)
-print('Test format dimacs:')
-for c in contraintes_C1:
-    print(dimacs_f(c))
-# il y a 12 contraintes et 24 clauses
-# m_1_1_2 m_1_1_3 <= 1
-# -> au jour 1, l'equipe 1 peut jouer contre l'equipe 2 ou 3 au plus une fois
+print(f'contraintes: {contraintes_C1} \nnombre de contraintes: {len(contraintes_C1)}')
+# ici pour 3 equipes et 4 jours on a 72 contraintes
 
-#4.
 def encoderC2(ne, nj):
-    contraintes_h = []
-    contraintes_a = []
-    # Générer les paires d'équipes
-    equipes = list(permutations(range(1, ne + 1), 2))
-    
-    # Contraintes pour chaque jour
-    for jour in range(1, nj + 1):
-        # Contraintes "au moins 1" pour les matchs à domicile et à l'extérieur
-        at_most_one_home = [codage(jour, i, j, ne) for i, j in equipes]
-        at_most_one_away = [codage(jour, j, i, ne) for i, j in equipes]
-
-        contraintes_h.append(at_most_one_home)
-        contraintes_a.append(at_most_one_away)
-        # print('home ', at_most_one_home)
-        # print('away ', at_most_one_away)
-    
-    print(f'full home: {contraintes_h}\n')
-    print(f'full away: {contraintes_a}\n')
-    full_contraintes = contraintes_a + contraintes_h
-    # dimacs_format = []
-    # for c in full_contraintes:
-    #     dimacs_format.append(au_plus_un_vrai(c))
-    # print(dimacs_format)
-    return full_contraintes
-
+    clauses = []
+    for x in range(ne):
+        for y in range(ne):
+            if x != y:
+                list_match = [codage(ne, j, x, y) for j in range(nj)]
+                clauses.extend(au_moins_un_vrai(list_match))
+                clauses.extend(au_plus_un_vrai(list_match))
+    return clauses
 print("C2")
-print(encoderC2(3,4))
+contraintes_C2 = encoderC2(3,4)
+print(f'contraintes: {contraintes_C2} \nnombre de contraintes: {len(contraintes_C2)}')
