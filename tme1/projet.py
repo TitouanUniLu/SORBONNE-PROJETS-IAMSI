@@ -91,8 +91,8 @@ def dimacs_format(journees):
     
 
 ''' si le nombre de semaines donne est trop petit alors on pourra pas avoir tous les matchs. Il y en aura le max pr le nombre de semaines mais pas tous '''
-dimacs_championship_schedule = generate_dimacs_championship_schedule(4,3)
-dimacs_version = dimacs_format(dimacs_championship_schedule)
+# dimacs_championship_schedule = generate_dimacs_championship_schedule(4,3)
+# dimacs_version = dimacs_format(dimacs_championship_schedule)
 
 #save results
 # with open("championat.dimacs", "w") as file:
@@ -105,34 +105,34 @@ Cela garantit que chaque combinaison de chaque équipe et chaque match de la jou
 nombre de variables = nj x ne**2
 '''
 
-''' Question 2.'''
-def codage(ne, j, x, y):
-    return j * ne**2 + x * ne + y + 1
-
 #changer les valeurs ici
-ne = 4 
+ne = 3
+nj = 6
 j = 1   
 x = 2   
 y = 0   
-encoded = codage(ne, j, x, y)
+
+''' Question 2.'''
+def codage(ne, nj, j, x, y):
+    return j * ne**2 + x * ne + y + 1
+
+encoded = codage(ne, nj, j, x, y)
 
 ''' Question 3.'''
 def decodage(k, ne):
-    k -= 1
-    j = k // (ne**2)
-    remainder = k % (ne**2)
-    x = remainder // ne
-    y = remainder % ne
+    y = (k - 1) % ne
+    x = ((k - 1 - y) // ne) % ne
+    j = (k - 1 - y - x * ne) // (ne * ne)
     return j, x, y
 decoded = decodage(encoded, ne)
 
-print(f'Test codage/decodage: {decodage(codage(ne,j,x,y), ne) == (j,x,y)}') #test
+print(f'Test codage/decodage: {decodage(encoded, ne) == (j,x,y)}') #test
 
 ''' EXERCICE 3'''
 ''' Question 1.'''
 def au_moins_un_vrai(variables):
-    clause = [str(v) for v in variables] + ["0"]
-    return [" ".join(clause)]
+    cl = [str(var) for var in variables] + ["0"]
+    return [" ".join(cl)]
 
 def au_plus_un_vrai(variables):
     clauses = []
@@ -157,16 +157,16 @@ def dimacs_f(l):
 def encoderC1(ne, nj):
     contraintes_C1 = []
     # Pour chaque équipe et chaque jour
-    for equipe in range(1, ne+1):
-        for jour in range(1, nj+1):
-            home = [codage(jour, equipe, ne, adversaire) for adversaire in range(1, ne+1) if adversaire != equipe]
-            ext = [codage(jour, equipe, adversaire, ne) for adversaire in range(1, ne+1) if adversaire != equipe]
+    for jour in range(nj):
+        for equipe in range(ne):
+            home = [codage(ne, nj, jour, equipe, adversaire) for adversaire in range(ne) if adversaire != equipe]
+            ext = [codage(ne, nj, jour, adversaire, equipe) for adversaire in range(ne) if adversaire != equipe]
 
             contraintes_C1.extend(au_plus_un_vrai(home + ext)) #dimacs_f(clause)
     return contraintes_C1
 
 print("C1")
-contraintes_C1 = encoderC1(ne=3, nj=4)
+contraintes_C1 = encoderC1(ne, nj)
 print(f'contraintes: {contraintes_C1} \nnombre de contraintes: {len(contraintes_C1)}')
 # ici pour 3 equipes et 4 jours on a 72 contraintes
 
@@ -175,10 +175,51 @@ def encoderC2(ne, nj):
     for x in range(ne):
         for y in range(ne):
             if x != y:
-                list_match = [codage(ne, j, x, y) for j in range(nj)]
+                list_match = [codage(ne, nj, j, x, y) for j in range(nj)]
                 clauses.extend(au_moins_un_vrai(list_match))
                 clauses.extend(au_plus_un_vrai(list_match))
     return clauses
 print("C2")
-contraintes_C2 = encoderC2(3,4)
+contraintes_C2 = encoderC2(ne,nj)
 print(f'contraintes: {contraintes_C2} \nnombre de contraintes: {len(contraintes_C2)}')
+
+def encoder(ne, nj):
+    contraintes = encoderC1(ne, nj) + encoderC2(ne, nj)
+    with open("championnat.cnf", "w") as f:
+        f.write(f"p cnf {ne**2 * nj - 1} {len(contraintes)}\n")
+        # Ecrire les contraintes
+        for contrainte in contraintes:
+            f.write(contrainte + "\n")
+    return contraintes
+
+encodedC12 = encoder(ne,nj)
+print(f'contraintes: {encodedC12} \nnombre de contraintes: {len(encodedC12)}')
+
+# Question 3
+def decoder(output_file, ne, nj, team_names_file=None):
+    if team_names_file != None:
+        with open(team_names_file, "r") as f:
+            team_names = [line.strip() for line in f]
+    else:
+        team_names = None
+
+    with open(output_file, "r") as f:
+        output_lines = f.readlines()
+
+    # Extraire le modèle s'il existe
+    output = output_lines[0].split()
+
+    if "UNSAT" in output: return "UNSAT"
+
+    planning = {jour: [] for jour in range(nj)}
+    for var in output:
+        if int(var) > 0:
+            j,x,y=decodage(int(var),ne)
+            if team_names != None:
+                planning[j].append((team_names[x], team_names[y]))
+            else: planning[j].append((x,y))
+
+    return planning
+
+d = decoder('output.cnf',ne,nj)
+print(f'planning = {d}')
