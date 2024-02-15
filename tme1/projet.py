@@ -1,5 +1,6 @@
 from itertools import permutations
 import subprocess
+import time
 
 ''' EXERCICE 1'''
 def generate_dimacs_championship_schedule(ne, ns):
@@ -212,11 +213,16 @@ def decoder(output_file, ne, nj, team_names_file=None):
 
     return planning
 
-def call_glucose(glucose):
+def call_glucose(glucose, timeout):
     try:
-        subprocess.run(glucose, shell=True, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"erreur: {e}")
+        # Run the command with a timeout
+        return subprocess.run(glucose, shell=True, timeout=timeout, capture_output=True)
+    except subprocess.TimeoutExpired:
+        print("glucose execution timed out")
+        return None
+    except Exception as e:
+        print(f"Error while running glucose: {e}")
+        return None
 
 # d = decoder('output.cnf',ne,nj)
 # print(f'planning = {d}')
@@ -228,12 +234,41 @@ def joli_affichage(planning):
         for match in matches:
             print(f"  Equipe {match[0]} vs Equipe {match[1]}")
 
-''' QUESTION 5'''
-if True:
+def optimisation(ne,nj_min,nj_max,timeout):
+    nj = nj_min
+    not_found = True
+    while nj <=nj_max and not_found:
+        contraintes = encoder(ne,nj)
+        print(f'execution of {nj} days -')
+        output = call_glucose('./glucose championnat.cnf output.cnf', timeout)
+        if output is not None:
+            print(output)
+            planning = decoder('output.cnf', ne, nj)
+            if planning == "UNSAT":
+                nj+=1
+            else:
+                print("FOUND CORRECT NJ", nj)
+                joli_affichage(planning)
+                not_found = False
+                return nj
+        else:
+            nj+=1
+    return False
+
+QUESTION5 = True
+if QUESTION5:
     #changer les valeurs ici
-    ne = 8
-    nj = 14 
+    ne = 3
+    nj = 6 
     contraintes = encoder(ne,nj)
     call_glucose('./glucose championnat.cnf output.cnf')
     planning = decoder('output.cnf', ne, nj)
     joli_affichage(planning)
+
+EXERCICE4 = True
+if EXERCICE4:
+    ne = 10
+    nj_min = 10
+    nj_max = 20
+    TIMEOUT = 10
+    print(f'pour ne={ne}, nj_min={nj_min}, nj_max={nj_max}, le nj optimal est {optimisation(ne,nj_min,nj_max,TIMEOUT)}')
