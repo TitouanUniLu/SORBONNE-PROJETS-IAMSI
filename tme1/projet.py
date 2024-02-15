@@ -304,7 +304,7 @@ if EXERCICE4:
 
 EXERCICE5 = True
 if EXERCICE5:
-    ne = 10
+    ne = 8
     nj_min = 10
     nj_max = 20
     extension = True
