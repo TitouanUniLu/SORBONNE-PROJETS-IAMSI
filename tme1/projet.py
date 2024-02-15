@@ -177,8 +177,10 @@ def encoderC2(ne, nj):
 # contraintes_C2 = encoderC2(ne,nj)
 # print(f'contraintes: {contraintes_C2} \nnombre de contraintes: {len(contraintes_C2)}')
 
-def encoder(ne, nj):
+def encoder(ne, nj, ext_exo5=None):
     contraintes = encoderC1(ne, nj) + encoderC2(ne, nj)
+    if ext_exo5 is not None:
+        contraintes.extend(encoderC3(ne, nj)) # + encoderC4(ne, nj)
     with open("championnat.cnf", "w") as f:
         f.write(f"p cnf {ne**2 * nj - 1} {len(contraintes)}\n")
         # Ecrire les contraintes
@@ -234,16 +236,16 @@ def joli_affichage(planning):
         for match in matches:
             print(f"  Equipe {match[0]} vs Equipe {match[1]}")
 
-def optimisation(ne,nj_min,nj_max,timeout):
+def optimisation(ne,nj_min,nj_max,timeout, extension=None):
     nj = nj_min
     not_found = True
     while nj <=nj_max and not_found:
-        contraintes = encoder(ne,nj)
+        contraintes = encoder(ne,nj,extension)
         print(f'execution of {nj} days -')
         output = call_glucose('./glucose championnat.cnf output.cnf', timeout)
         if output is not None:
             print(output)
-            planning = decoder('output.cnf', ne, nj)
+            planning = decoder('output.cnf', ne, nj, 'equipes.txt')
             if planning == "UNSAT":
                 nj+=1
             else:
@@ -255,20 +257,55 @@ def optimisation(ne,nj_min,nj_max,timeout):
             nj+=1
     return False
 
-QUESTION5 = True
-if QUESTION5:
-    #changer les valeurs ici
-    ne = 3
-    nj = 6 
-    contraintes = encoder(ne,nj)
-    call_glucose('./glucose championnat.cnf output.cnf')
-    planning = decoder('output.cnf', ne, nj)
-    joli_affichage(planning)
+def au_plus_k(var,k):
+    clauses = []
+    n = len(var)
+    for i in range(int(k)+1, n+1):
+        for c in permutations(var, i):
+            clause = [str(v) for v in c] + ["0"]
+            clauses.append(" ".join(clause))
+    return clauses
 
-EXERCICE4 = True
+def au_moins_k(var, k):
+    n_var = [-x for x in var]
+    return au_plus_k(n_var, len(var)-k)
+
+def encoderC3(ne,nj,exterieur=0.5,domicile=0.4):
+    contraintes = []
+    nb_min_dom = nj * ne * domicile // 100
+    nb_min_ext = ne * nj * exterieur // 100
+    for i in range(ne):
+        for j in range(ne):
+            if i!=j:
+                domicile_c = [codage(ne, nj, y, i, j) for y in range(1, nj, 2)]
+                contraintes.extend(au_moins_k(domicile_c,nb_min_dom))
+                exterieur_c = [codage(ne, nj, y, j, i) for y in range(1, nj, 2)]
+                contraintes.extend(au_moins_k(exterieur_c,nb_min_ext))
+    return contraintes
+
+def encoderC4(ne,nj):
+    contraintes = []
+    for i in range(nj):
+        for x in range(ne):
+            domicile_c = [codage(ne, nj, i, x, y) for y in range(ne) if y!=x]
+            contraintes.extend(au_plus_k(domicile_c,2))
+            exterieur_c = [codage(ne, nj, i, y, x) for y in range(ne) if y!=x]
+            contraintes.extend(au_plus_k(exterieur_c,2))
+    return contraintes
+
+TIMEOUT = 10
+
+EXERCICE4 = False
 if EXERCICE4:
     ne = 10
     nj_min = 10
     nj_max = 20
-    TIMEOUT = 10
     print(f'pour ne={ne}, nj_min={nj_min}, nj_max={nj_max}, le nj optimal est {optimisation(ne,nj_min,nj_max,TIMEOUT)}')
+
+EXERCICE5 = True
+if EXERCICE5:
+    ne = 10
+    nj_min = 10
+    nj_max = 20
+    extension = True
+    print(f'pour ne={ne}, nj_min={nj_min}, nj_max={nj_max}, le nj optimal est {optimisation(ne,nj_min,nj_max,TIMEOUT, extension)}')
