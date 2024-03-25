@@ -1,0 +1,69 @@
+EXO3:
+voir redaction du fichier exo3.lp
+
+EXO4:
+parseur_exo4.py
+Il suffit de lancer 'python parseur_exo4.py' dans le terminal, puis de faire 'clingo programme_asp_exo4.lp' (output du fichier python)
+Le fichier python prends les deux fichier PDDL domain et problem et parse le contenu pour creer un fichier lp avec la conversion en ASP.
+ La fonction lit le fichier, supprime les commentaires, et transforme le contenu en une structure de données navigable. 
+Pour chaque élément (domaine, objets, état initial, but), elle génère la partie correspondante du code ASP. Les objets sont traités de manière spécifique pour capturer leur type, ce qui est essentiel pour la génération correcte des règles ASP. 
+La gestion de l'état initial et du but prend en compte les conditions négatives (not) et adapte la syntaxe pour correspondre aux exigences de l'ASP, 
+en veillant à traiter correctement les cas sans paramètres comme handempty.
+
+EXO5:
+pour le 5eme exo, il suffit de lancer 'python aspplan_global_exo5.py'. 
+Ce fichier implémente une stratégie pour générer un plan minimal en utilisant ASP (Answer Set Programming) à partir de descriptions de problèmes en format PDDL.
+Des règles ASP de base sont ajoutées (from exo3). 
+Au lieu de chercher immédiatement un plan long ou complexe, le programme commence par essayer de trouver un plan très court,
+jusqu'à trouver une solution ou atteindre une limite prédéfinie.
+Le solveur Clingo est utilisé pour vérifier l'existence d'un plan qui satisfait toutes les conditions du problème dans les limites fixées. 
+Si un plan est trouvé, il est affiché, sinon le programme indique qu'aucun plan n'a été trouvé dans la limite d'étapes spécifiée.
+On trouve donc un plan avec n = 4 pour le monde des blocs!
+Voila l'output:
+C:\Program Files\clingo-5.3.0-win64>python aspplan_global_exo5.py
+Trying to find a plan with 1 step(s)...
+clingo version 5.3.0
+Reading from programme_asp_exo5.lp
+Solving...
+UNSATISFIABLE
+
+Models       : 0
+Calls        : 1
+Time         : 0.006s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)
+CPU Time     : 0.000s
+
+Trying to find a plan with 2 step(s)...
+clingo version 5.3.0
+Reading from programme_asp_exo5.lp
+Solving...
+UNSATISFIABLE
+
+Models       : 0
+Calls        : 1
+Time         : 0.009s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)
+CPU Time     : 0.016s
+
+Trying to find a plan with 3 step(s)...
+clingo version 5.3.0
+Reading from programme_asp_exo5.lp
+Solving...
+UNSATISFIABLE
+
+Models       : 0
+Calls        : 1
+Time         : 0.013s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)
+CPU Time     : 0.016s
+
+Trying to find a plan with 4 step(s)...
+Plan found with 4 step(s)!
+clingo version 5.3.0
+Reading from programme_asp_exo5.lp
+Solving...
+Answer: 1
+perform(unstack(b,a),0) perform(stack(b,c),1) perform(pickup(a),2) perform(stack(a,b),3)
+SATISFIABLE
+
+Models       : 1+
+Calls        : 1
+Time         : 0.016s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)
+CPU Time     : 0.016s
